@@ -28,7 +28,7 @@ void cleanAll(){
 int main(int argc, char *argv[]){
 	int c;			//used for getopt
 	key_t key;
-	int count = 16;	
+	int count = 4;	
 	
 	if(argc == 1){
 		errno = 3;
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-	cleanAll();
+	//cleanAll();
 
 	return 0;
 
