@@ -17,8 +17,7 @@ int produceRandomItem(){
 	return randomItem;
 }
 
-int main(int argc, char *argv[]){
-	
+int main(int argc, char *argv[]){	
 	int shmid;
 	int *shmPtr;
 	int randomTime= 0;
@@ -55,13 +54,14 @@ int main(int argc, char *argv[]){
 
 	int control = 1;
 	while(control){
-		if(index < 4){
+	srand(time(NULL));
+	randomTime = rand() % 5 + 1;
+	sleep(randomTime);
+
 			x = produceRandomItem();
-			shmPtr[index] = x;
-			index++;
-		} else {
-			control = 0;
-		}
+			printf("random item %d\n", x);
+			append(x);
+			//shmPtr[index] = x;
 	}
 	
 	int y;

@@ -14,7 +14,7 @@ int *shmPtr;
 
 int main(int argc, char *argv[]){
 
-test(5);
+//test(5);
 	int count = 4;
 	int index=0;
 	//Allocate shared memory
