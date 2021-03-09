@@ -5,6 +5,10 @@
 #include <unistd.h>
 #include <sys/shm.h>
 #include <sys/ipc.h>
+#include <semaphore.h>
+#include <pthread.h>
+#include <time.h>
+#define THREAD_NUM 2
 
 int n = 6;			//default no. of consumers
 int m = 2;			//default no. of producers
@@ -13,6 +17,57 @@ FILE logfile;			//default logfile name
 int *shmPtr;
 int shmid;
 #define BUFFER sizeof(int)
+
+
+//test monitor
+int N = 4;
+char buffer [4];
+sem_t full, empty;
+int nextin = 0, nextout = 0;
+int count = 0;
+sem_t notfull, notempty;
+
+
+void append(){
+	int x = 10;
+	if(count == 4)
+		buffer[nextin] = x;
+	nextin = (nextin + 1) % N;
+	count++;
+
+	signal(notempty);
+}
+
+void take (char x){
+	if(count == 0)
+		wait(notempty);
+	x = buffer[nextout];
+	nextout = (nextout + 1)% N;
+	count--;
+
+	signal(notfull);
+
+}
+
+int x;
+void producer(){
+	srand(time(NULL));
+	while(count < N){
+	x = rand() % 5;
+		//produce(x);
+		append(x);
+		printf("appended x%d\n", x);
+	}
+}
+void consumer(){
+int i;
+	//while(count  N){
+	for(i = 0; i < 5; i++){
+		take(x);
+		//consume(x);
+		printf("taken x%d\n", x);}
+//	}
+}
 
 //Displays help menu and how to use the program
 void help(){
@@ -26,7 +81,32 @@ void cleanAll(){
 }
 
 int main(int argc, char *argv[]){
-	int c;			//used for getopt
+
+producer();
+consumer();
+/*pthread_t th[2];
+int i;
+
+for(i = 0; i < THREAD_NUM; i++){
+	if(i % 2 == 0){
+		if(pthread_create(&th[i], NULL, producer, NULL) != 0){
+			perror("failed crete");
+		}
+	}else {
+		if(pthread_create(&th[i], NULL, consumer, NULL) != 0){
+			perror("failed crete");
+		}
+
+	}
+}
+
+for(i = 0; i < THREAD_NUM; i++){
+	if(pthread_join(th[i],NULL) != 0){
+		perror("failed join");
+	}
+}
+*/
+/*	int c;			//used for getopt
 	key_t key;
 	int count = 4;	
 	
@@ -105,6 +185,6 @@ int main(int argc, char *argv[]){
 	//cleanAll();
 
 	return 0;
-
+*/
 ////////////////////////////END OF MAIN//////////////////////////////////////////
 }

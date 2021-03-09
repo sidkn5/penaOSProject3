@@ -8,6 +8,15 @@
 #include <time.h>
 
 #define BUFFER sizeof(int)
+
+//this produces a random number as the "item"
+int produceRandomItem(){
+	int randomItem;
+	randomItem = rand() % 10 + 1;
+
+	return randomItem;
+}
+
 int main(int argc, char *argv[]){
 	
 	int shmid;
@@ -22,7 +31,7 @@ int main(int argc, char *argv[]){
 	randomTime = rand() % 5 + 1;
 
 	printf("Sleeping \n");
-	//sleep(randomTime);
+	sleep(randomTime);
 	printf("Done sleepting \n");
 
 
@@ -44,12 +53,14 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-
-	while(index < 4){
+	int control = 1;
+	while(control){
 		if(index < 4){
-			x = rand() % 10;
+			x = produceRandomItem();
 			shmPtr[index] = x;
 			index++;
+		} else {
+			control = 0;
 		}
 	}
 	
