@@ -31,4 +31,4 @@ libmonitor.a: libmonitor.o
 	ar rcs $@ $^
 
 clean:
-	rm -f *.o monitor producer consumer *.a
+	rm -f *.o monitor producer consumer *.a *.txt logfile
