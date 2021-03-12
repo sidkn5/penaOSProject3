@@ -12,12 +12,12 @@
 #include "libmonitor.h"
 #define BUFFERSIZE sizeof(int)
 #define BUFFERLOGSIZE sizeof(char)
-
+#define MUTEX 0
+#define	BUFFER 1
+#define AVAILABLE 2
 #define NEXTIN 4	
 #define NEXTOUT 5
-#define	BUFFER 2
-#define AVAILABLE 1
-#define MUTEX 0
+
 int sem_id;
 int var_id;
 int buffer_id;
@@ -31,6 +31,10 @@ char *logfile[30];
 
 //need time
 void loggingProducer(int n){
+
+	time_t currentTime;
+	struct tm *timeInfo;
+
 	//Allocate shared memory that holds the file name
 	key_t logKey = ftok("Makefile" , 'a');
 
@@ -49,11 +53,18 @@ void loggingProducer(int n){
 	}
 	FILE *fp;
 	fp = fopen(logPtr, "a");
-	fprintf(fp, "Produced item %d\n ", n);
+	time(&currentTime);
+	timeInfo = localtime(&currentTime);
+	fprintf(fp,"Produced item %d\n", n);
+	fprintf(fp,"The item produced is produced at time: %s\n\n", asctime(timeInfo));
 	fclose(fp);
 }
 
-void loggingConsumer(int n){
+void loggingConsumer(int n)
+{
+	time_t currentTime;
+	struct tm *timeInfo;
+
 	//Allocate shared memory that holds the file name
 	key_t logKey = ftok("Makefile" , 'a');
 
@@ -71,8 +82,11 @@ void loggingConsumer(int n){
 		exit(1);
 	}
 	FILE *fp;
+	time(&currentTime);
+	timeInfo = localtime(&currentTime);
 	fp = fopen(logPtr, "a");
-	fprintf(fp, "Consumer consumed item %d\n ", n);
+	fprintf(fp, "Consumer consumed item %d\n", n);
+	fprintf(fp,"The item consumed is consumed at time: %s\n\n", asctime(timeInfo));
 	fclose(fp);
 }
 

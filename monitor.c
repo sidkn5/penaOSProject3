@@ -11,8 +11,8 @@
 #include <signal.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h>
 #include "libmonitor.h"
-#define THREAD_NUM 2
 
 int noOfProcess = 19;		//default no. of processes is 20 - 1
 int n = 6;			//default no. of consumers
@@ -26,7 +26,6 @@ int logid;
 char *logPtr;
 int x;				//can be used for loops 
 pid_t *pids;
-pid_t pid;
 #define BUFFERSIZE sizeof(int)
 #define BUFFERLOGSIZE sizeof(char)
 
@@ -74,16 +73,7 @@ int checkTime(int n){
 void initSemaphores(){
 	semctl(semid, BUFFER, SETVAL, 0);
 	semctl(semid, MUTEX, SETVAL, 1);
-	semctl(semid, AVAILABLE, SETVAL, 0);
-}
-
-int getPlace(){
-	int place;
-	for(place = 0; place < 19; place++){
-		if(pids[place] == 0){
-			return place;
-		}
-	}
+	semctl(semid, AVAILABLE, SETVAL, 4);
 }
 
 int checkFileName(int n){
@@ -96,25 +86,58 @@ int checkFileName(int n){
 	}
 }
 
+void resetPid(pid_t p){
+	int i;
+	for(i = 0; i < noOfProcess; i++){
+		if(pids[i] == p){
+			pids[i] = 0;
+		}
+	}
+}
+
+int freeIndex(){
+	int i;
+	for(i = 0; i < noOfProcess; i++){
+		if(pids[i] == 0){
+			return i;
+		}
+	}
+}
+//referred to stackoverflow
+void mySigchldHandler(int sig){
+	pid_t pid;
+	int status;
+
+	while((pid = waitpid(-1, &status, WNOHANG)) != -1){
+		resetPid(pid);
+	}
+}
 
 int main(int argc, char *argv[]){
-
-	signal(SIGALRM, timesUp);
-	signal(SIGINT, ctrlC);
-
+	
+	int a;			//for loop
+	int b;			//for loop
 	int c;			//used for getopt
 	key_t key;		//key for shared memory
 	int count = 6;	
 	int z;			//logfile check
-	strcpy(logfile, "logfile");
+	strcpy(logfile, "logfile.txt");
 	/*if(argc == 1){
 		errno = 3;
 		perror("monitor: Error: Please refer to -h help for proper use of the program.");
 		return 0;
 	}*/
 
+	signal(SIGALRM, timesUp);
+	signal(SIGINT, ctrlC);
 
-	alarm(100);			//default time
+	//referred from stackoverflow
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = mySigchldHandler;
+	sigaction(SIGCHLD, &sa, NULL);
+
+	alarm(timeTermination);			//default time
 	//get option
 	while((c = getopt(argc, argv, "ho:p:c:t:")) != -1){
 		switch(c){
@@ -165,6 +188,16 @@ int main(int argc, char *argv[]){
 	}
 	///////////END of get option
 	
+	if(m > 6){
+		printf("Sorry there should be more consumers than producers.\n");
+		printf("Since the consumer default is 6, producers will be set to 5.\n");
+		m = 5;
+	}
+	if(n < 2){
+		printf("Sorry there should be more consumers than producers.\n");
+		printf("Since the producer default is 2, consumers will be set to 1.\n");
+		n = 1;
+	}
 	
 	//Allocate shared memory that holds the file name
 	key_t logKey = ftok("Makefile" , 'a');
@@ -215,17 +248,17 @@ int main(int argc, char *argv[]){
 	shmPtr[NEXTIN] = 0;
 	shmPtr[NEXTOUT] = 0;
 
-	
-	semctl(semid, MUTEX, SETVAL, 1);
-	semctl(semid, AVAILABLE, SETVAL, 4);
-	semctl(semid, BUFFER, SETVAL, 0);
-
-	int place;
-
+	/*
+	TEST
 
 	pids[1] = fork();
 		if(pids[1] == 0){
 			
+			execl("./producer", "./producer", (char *)0);
+		}
+	pids[5] = fork();
+		if(pids[5] == 0){
+			sleep(1);	
 			execl("./producer", "./producer", (char *)0);
 		}
 	pids[2] = fork();
@@ -243,32 +276,29 @@ int main(int argc, char *argv[]){
 		if(pids[4] == 0){
 			
 			execl("./consumer", "./consumer", (char *)0);
-		}
+		}*/
 
-	/*/m = producers
-	int i;
-	for(i = 0; i < m; i++){
-	printf("Monitor here2.\n");
-		place = getPlace();
-		pids[place] = fork();
-		if(pids[place] == 0){
-	printf("Monitor here3.\n");
+	
+	int pidIndex;
+	//producers
+	for(a = 0; a < m; a++){
+		pidIndex = freeIndex();
+		pids[pidIndex] = fork();
+		if(pids[pidIndex] == 0){
 			execl("./producer", "./producer", (char *)0);
 		}
-	printf("Monitor here4.\n");
-	}*/
-	/*int j;
-	//n = consumers
-	for(j = 0; j < n; j++){
-		place = getPlace();
-		pids[place] = fork();
-		if(pids[place] == 0){
+	}
+
+	//consumers
+	for(b = 0; b < n; b++){
+		pidIndex = freeIndex();
+		pids[pidIndex] = fork();
+		if(pids[pidIndex] == 0){
 			execl("./consumer", "./consumer", (char *)0);
 		}
-	}*/
-	
+	}
 
-	sleep(15);
+	sleep(25);
 	cleanAll();
 
 	return 0;

@@ -1,7 +1,7 @@
 #define NEXTIN 4	
 #define NEXTOUT 5
-#define	BUFFER 2
-#define AVAILABLE 1
+#define	BUFFER 1
+#define AVAILABLE 2
 #define MUTEX 0
 
 void append();

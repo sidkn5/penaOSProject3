@@ -30,12 +30,12 @@ int main(int argc, char *argv[]){
 	printf("I am here.");
 	signal(SIGKILL, killHandler);
 	signal(SIGINT, ctrlC);
-	int randomTime;
-	srand(time(NULL));
-	randomTime = (rand() % 5) + 1;
 	int x = 0;
 	do{
 	printf("HEllo");
+	int randomTime;
+	srand(time(NULL));
+	randomTime = (rand() % 5) + 1;
 		append();
 		sleep(randomTime);
 		//sleep(1);
