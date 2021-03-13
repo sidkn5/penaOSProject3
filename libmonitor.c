@@ -12,23 +12,27 @@
 #include "libmonitor.h"
 #define BUFFERSIZE sizeof(int)
 #define BUFFERLOGSIZE sizeof(char)
+
+/*
+FROM libmonitor.h
 #define MUTEX 0
 #define	BUFFER 1
 #define AVAILABLE 2
 #define NEXTIN 4	
 #define NEXTOUT 5
-
-int sem_id;
+*/
+int semid;
 int var_id;
 int buffer_id;
 
 int shmid;
 int *shmPtr;
 int count = 4;
-	int logid;
-	char *logPtr;
+int logid;
+char *logPtr;
 char *logfile[30];
 
+struct sembuf semaphore;
 //need time
 void loggingProducer(int n){
 
@@ -58,6 +62,7 @@ void loggingProducer(int n){
 	fprintf(fp,"Produced item %d\n", n);
 	fprintf(fp,"The item produced is produced at time: %s\n\n", asctime(timeInfo));
 	fclose(fp);
+	shmdt(logPtr);
 }
 
 void loggingConsumer(int n)
@@ -88,30 +93,29 @@ void loggingConsumer(int n)
 	fprintf(fp, "Consumer consumed item %d\n", n);
 	fprintf(fp,"The item consumed is consumed at time: %s\n\n", asctime(timeInfo));
 	fclose(fp);
+	shmdt(logPtr);
 }
 
 void sem_wait(int n){
 
 	key_t semKey = ftok("./producer.c", 'a');
-	sem_id = semget(semKey, 3, 0);
+	semid = semget(semKey, 4, 0);
 
-	struct sembuf semaphore;
 	semaphore.sem_op = -1;
 	semaphore.sem_num = n;
 	semaphore.sem_flg = 0;
-	semop(sem_id, &semaphore, 1);
+	semop(semid, &semaphore, 1);
 }
 
 void sem_signal(int n){
 
 	key_t semKey = ftok("./producer.c", 'a');
-	sem_id = semget(semKey, 3, 0);
+	semid = semget(semKey, 4, 0);
 
-	struct sembuf semaphore;
 	semaphore.sem_op = 1;
 	semaphore.sem_num = n;
 	semaphore.sem_flg = 0;
-	semop(sem_id, &semaphore, 1);
+	semop(semid, &semaphore, 1);
 
 }
 
@@ -125,18 +129,20 @@ int produceRandomItem(){
 }
 void handler(){
 	shmdt(shmPtr);
+	shmdt(logPtr);
+	exit(0);
 }
-
 
 void append (){
 	int x;				//holds the random item number
 	signal(SIGINT, handler);
 
+	//printf("before wait In library the mutex value is: %d\n", semctl(semid, MUTEX, GETVAL, NULL));
 	sem_wait(AVAILABLE);
 	sem_wait(MUTEX);
+//	printf("AFTER wait In library the mutex value is: %d\n", semctl(semid, MUTEX, GETVAL, NULL));
 	x = produceRandomItem();
 	
-
 	//Allocate shared memory
 	key_t key;
 	key = ftok("./README.md", 'a');
@@ -160,11 +166,11 @@ void append (){
 	shmPtr[shmPtr[NEXTIN]] = x;
 	shmPtr[NEXTIN] = (shmPtr[NEXTIN] + 1) % 4;
 	//count++;
-
-
+	sleep(1);
 	printf("Appending %d\n", x);
 	loggingProducer(x);
 	shmdt(shmPtr);
+
 
 	sem_signal(MUTEX);
 	sem_signal(BUFFER);
@@ -177,7 +183,6 @@ void take(){
 	signal(SIGINT, handler);
 	sem_wait(BUFFER);
 	sem_wait(MUTEX);
-	x = produceRandomItem();
 
 	//Allocate shared memory
 	key_t key;
@@ -201,6 +206,7 @@ void take(){
 
 	x = shmPtr[shmPtr[NEXTOUT]];
 	shmPtr[NEXTOUT] = (shmPtr[NEXTOUT] + 1) % 4;
+	sleep(1);
 
 	loggingConsumer(x);
 	shmdt(shmPtr);

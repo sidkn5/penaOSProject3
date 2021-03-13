@@ -25,7 +25,6 @@ int main(int argc, char *argv[]){
 
 	
 	sleep(randomTime);
-	//	sleep(2);
 	take();
 
 

@@ -5,18 +5,12 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/types.h>
+#include <sys/sem.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <signal.h>
-
+#include "libmonitor.h"
 #define BUFFERSIZE sizeof(int)
-
-/*/this produces a random number as the "item"
-int produceRandomItem(){
-	int randomItem;
-	randomItem = rand() % 10 + 1;
-
-	return randomItem;
-}*/
 
 void killHandler(){
 	exit(0);
@@ -27,20 +21,16 @@ void ctrlC(){
 }
 
 int main(int argc, char *argv[]){
-	printf("I am here.");
+	//printf("I am here.");
 	signal(SIGKILL, killHandler);
 	signal(SIGINT, ctrlC);
-	int x = 0;
-	do{
-	printf("HEllo");
-	int randomTime;
 	srand(time(NULL));
-	randomTime = (rand() % 5) + 1;
-		append();
+	int randomTime;
+	while(1){
+		randomTime = (rand() % 5) + 1;
 		sleep(randomTime);
-		//sleep(1);
-		x++;
-	}while(1);
+		append();
+	}
 return 0;
 //////////END OF MAIN//////////////////
 }

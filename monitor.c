@@ -33,6 +33,20 @@ pid_t *pids;
 //Displays help menu and how to use the program
 void help(){
 	printf("Help Menu: \n");
+	printf("USAGE: \t\t./monitor [-h] [-o logfile] [-p m] [-c n] [-t time]\n\n");
+	printf("This program solves the producer consumer problem by implementing semaphores \n");
+	printf("into a monitor.\n\n");
+	printf("Options: \n");
+	printf("[-h]        \t\t-this option shows the help menu of the program. \n");
+	printf("[-o] logfile\t\t-this option allows the user to specify a logfile name with a maximum \n");
+	printf("            \t\tof 30 chars. Please note that end the filename with .txt so it can be cleaned. \n");
+	printf("[-p m]      \t\t-this option allows the user to provide the number of producers. \n");
+	printf("            \t\tsince the defualt consumers is 6 and the consumers have to be more than \n");
+	printf("            \t\tthe producers, the max value of producers is 5.\n");
+	printf("[-c n]      \t\t-this option allows the user to specify the number of consumers. \n");
+	printf("[-t time]   \t\t-this option allows the user to specify a time in secs to when the program\n");
+	printf("            \t\twill terminate no matter what.\n");
+
 }
 
 //deallocates and frees everything
@@ -242,25 +256,28 @@ int main(int argc, char *argv[]){
 
 	//allocate shared memory semaphore
 	semKey = ftok("./producer.c",'a');
-	semid = semget(semKey, 3, IPC_CREAT | 0666);
+	semid = semget(semKey, 4, IPC_CREAT | 0666);
 	initSemaphores();
 
+	
+	printf("In monitor the mutex value is: %d\n", semctl(semid, MUTEX, GETVAL, NULL));
 	shmPtr[NEXTIN] = 0;
 	shmPtr[NEXTOUT] = 0;
 
-	/*
-	TEST
+	
+	/*/TEST
 
 	pids[1] = fork();
 		if(pids[1] == 0){
 			
 			execl("./producer", "./producer", (char *)0);
 		}
-	pids[5] = fork();
-		if(pids[5] == 0){
-			sleep(1);	
+	pids[2] = fork();
+		sleep(1);
+		if(pids[2] == 0){
 			execl("./producer", "./producer", (char *)0);
 		}
+		
 	pids[2] = fork();
 		if(pids[2] == 0){
 			
@@ -280,8 +297,10 @@ int main(int argc, char *argv[]){
 
 	
 	int pidIndex;
+	srand(time(NULL));
 	//producers
 	for(a = 0; a < m; a++){
+		//sleep(rand()%3+1);
 		pidIndex = freeIndex();
 		pids[pidIndex] = fork();
 		if(pids[pidIndex] == 0){
@@ -298,6 +317,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 
+	//Finish, track the consumers and terminate when all consumers are done
 	sleep(25);
 	cleanAll();
 
