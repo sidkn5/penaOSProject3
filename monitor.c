@@ -124,6 +124,7 @@ void initSemaphores(){
 	semctl(semid, CONSUMERTRACKER, SETVAL, n);
 	
 	semctl(semid, SPOTAVAILABLE, SETVAL, 19);
+	semctl(semid, CONSUMERWAITING, SETVAL, n);
 }
 
 int checkFileName(int n){
@@ -173,11 +174,11 @@ int main(int argc, char *argv[]){
 	int count = 6;	
 	int z;			//logfile check
 	strcpy(logfile, "logfile.txt");
-	if(argc == 1){
+	/*if(argc == 1){
 		errno = 3;
 		perror("monitor: Error: Please refer to -h help for proper use of the program.");
 		return 0;
-	}
+	}*/
 
 	signal(SIGALRM, timesUp);
 	signal(SIGINT, ctrlC);
@@ -286,7 +287,7 @@ int main(int argc, char *argv[]){
 
 	//allocate shared memory semaphore
 	semKey = ftok("./producer.c",'a');
-	semid = semget(semKey, 5, IPC_CREAT | 0666);
+	semid = semget(semKey, 6, IPC_CREAT | 0666);
 	initSemaphores();
 	
 	shmPtr[NEXTIN] = 0;
@@ -324,10 +325,9 @@ int main(int argc, char *argv[]){
 		if((semctl(semid, CONSUMERTRACKER, GETVAL, NULL)) == 0)
 			break;
 	}*/
-	int test = 0;
 	while(1){
 
-	printf("in monitor tracker: %d\n ", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));	
+	//printf("in monitor tracker: %d\n ", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));	
 		if(semctl(semid, CONSUMERTRACKER, GETVAL, NULL) == 0){
 			break;}
 			

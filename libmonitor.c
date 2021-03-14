@@ -99,7 +99,7 @@ void loggingConsumer(int n)
 void sem_wait(int n){
 
 	key_t semKey = ftok("./producer.c", 'a');
-	semid = semget(semKey, 5, 0);
+	semid = semget(semKey, 6, 0);
 
 	semaphore.sem_op = -1;
 	semaphore.sem_num = n;
@@ -110,7 +110,7 @@ void sem_wait(int n){
 void sem_signal(int n){
 
 	key_t semKey = ftok("./producer.c", 'a');
-	semid = semget(semKey, 5, 0);
+	semid = semget(semKey, 6, 0);
 
 	semaphore.sem_op = 1;
 	semaphore.sem_num = n;
@@ -137,6 +137,7 @@ void append (){
 	int x;				//holds the random item number
 	signal(SIGINT, handler);
 
+	sem_wait(CONSUMERWAITING);
 	sem_wait(AVAILABLE);
 	sem_wait(MUTEX);
 	x = produceRandomItem();

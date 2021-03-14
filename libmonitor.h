@@ -5,6 +5,7 @@
 #define MUTEX 0
 #define CONSUMERTRACKER 3
 #define SPOTAVAILABLE 4
+#define CONSUMERWAITING 5
 
 void append();
 void take();

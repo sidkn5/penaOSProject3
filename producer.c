@@ -28,8 +28,8 @@ int main(int argc, char *argv[]){
 	int randomTime;
 	while(1){
 		randomTime = (rand() % 5) + 1;
-		sleep(randomTime);
 		append();
+		sleep(randomTime);
 	}
 return 0;
 //////////END OF MAIN//////////////////
