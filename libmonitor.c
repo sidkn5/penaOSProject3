@@ -99,7 +99,7 @@ void loggingConsumer(int n)
 void sem_wait(int n){
 
 	key_t semKey = ftok("./producer.c", 'a');
-	semid = semget(semKey, 4, 0);
+	semid = semget(semKey, 5, 0);
 
 	semaphore.sem_op = -1;
 	semaphore.sem_num = n;
@@ -110,7 +110,7 @@ void sem_wait(int n){
 void sem_signal(int n){
 
 	key_t semKey = ftok("./producer.c", 'a');
-	semid = semget(semKey, 4, 0);
+	semid = semget(semKey, 5, 0);
 
 	semaphore.sem_op = 1;
 	semaphore.sem_num = n;
@@ -137,10 +137,8 @@ void append (){
 	int x;				//holds the random item number
 	signal(SIGINT, handler);
 
-	//printf("before wait In library the mutex value is: %d\n", semctl(semid, MUTEX, GETVAL, NULL));
 	sem_wait(AVAILABLE);
 	sem_wait(MUTEX);
-//	printf("AFTER wait In library the mutex value is: %d\n", semctl(semid, MUTEX, GETVAL, NULL));
 	x = produceRandomItem();
 	
 	//Allocate shared memory
@@ -171,6 +169,10 @@ void append (){
 	loggingProducer(x);
 	shmdt(shmPtr);
 
+		/*if(semctl(semid, CONSUMERTRACKER, GETVAL, NULL) == 0){
+			printf("shouldend");
+			exit(0);
+			}*/
 
 	sem_signal(MUTEX);
 	sem_signal(BUFFER);
@@ -214,112 +216,9 @@ void take(){
 	sem_signal(MUTEX);
 	sem_signal(AVAILABLE);
 
+	sem_wait(CONSUMERTRACKER);
+	//semctl(semid, CONSUMERTRACKER, SETVAL, (semctl(semid, CONSUMERTRACKER, GETVAL, NULL)) - 1);
+	printf("CONSUMER TRACKER %d\n", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));
 
 }
 
-
-/*
-void append(){
-	int x;
-	//use of semget
-	int *vars;
-	struct sembuf init_sm[] = {
-		{0, BUFFER_SIZE, IPC_NOWAIT},	//initialize no of spaces in buffer
-		{1, 0, IPC_NOWAIT},		//initiliaze no of elements to 0
-		{2, 1, IPC_NOWAIT}		//initialize mutex = 1
-
-	};
-	
-	key_t varKey = ftok("./producer",'a');
-	var_id = shmget(varKey, 2 * sizeof(int), S_IRUSR | S_IWUSR);
-	vars = (int *)shmat(var_id, 0, 0);
-	vars[FRONT] = vars[BACK] = 0;
-
-	//init buffer
-	key_t key;
-	key = ftok("./README.md", 'a');
-	buffer_id = shmget(key, BUFFER_SIZE * sizeof(int), S_IRUSR | S_IWUSR);
-	
-	//init semaphores
-	if(count > 0){
-
-	key_t semKey = ftok("./consumer",'a');
-	sem_id = shmget(semKey, 3, S_IRUSR | S_IWUSR);
-	semop(sem_id, init_sm, 3);
-
-	int i;
-	char obuf[512];
-	//int* vars;
-	int *buffer;
-	struct sembuf acquire[] = {{0, -1, 0}, {2, -1, SEM_UNDO}};
-	struct sembuf release[] = {{1, 1, 0}, {2, 1, SEM_UNDO}};
-
-	vars = (int *)shmat(var_id, 0, 0);
-	buffer = (int *)shmat(buffer_id, 0, 0);
-
-	fprintf(stderr, "Producing now %d\n", x);
-
-	semop(sem_id, acquire, 2);
-	int produce;
-	buffer[vars[FRONT]] = produce;
-	vars[FRONT] = (vars[FRONT] + 1) % BUFFER_SIZE;
-
-	semop(sem_id, release, 2);
-
-	fprintf(stderr, "Produced %d\n", x);
-	count--;
-	}
-
-}
-
-void take(){
-	int x;
-	//use of semget
-	int *vars;
-	struct sembuf init_sm[] = {
-		{0, BUFFER_SIZE, IPC_NOWAIT},	//initialize no of spaces in buffer
-		{1, 0, IPC_NOWAIT},		//initiliaze no of elements to 0
-		{2, 1, IPC_NOWAIT}		//initialize mutex = 1
-
-	};
-	
-	key_t varKey = ftok("./producer",'a');
-	var_id = shmget(varKey, 2 * sizeof(int), S_IRUSR | S_IWUSR);
-	vars = (int *)shmat(var_id, 0, 0);
-	vars[FRONT] = vars[BACK] = 0;
-
-	//init buffer
-	key_t key;
-	key = ftok("./README.md", 'a');
-	buffer_id = shmget(key, BUFFER_SIZE * sizeof(int), S_IRUSR | S_IWUSR);
-	
-	//init semaphores
-	if(count > 0){
-	key_t semKey = ftok("./producer",'a');
-	sem_id = shmget(semKey, 3, S_IRUSR | S_IWUSR);
-	semop(sem_id, init_sm, 3);
-
-	int i;
-	char obuf[512];
-	//int* vars;
-	int *buffer;
-	struct sembuf acquire[] = {{0, -1, 0}, {2, -1, SEM_UNDO}};
-	struct sembuf release[] = {{1, 1, 0}, {2, 1, SEM_UNDO}};
-
-	vars = (int *)shmat(var_id, 0, 0);
-	buffer = (int *)shmat(buffer_id, 0, 0);
-
-	fprintf(stderr, "Consuming now %d\n", x);
-
-	semop(sem_id, acquire, 2);
-	int consume;
-	consume = buffer[vars[BACK]];
-	vars[BACK] = (vars[BACK] + 1) % BUFFER_SIZE;
-
-	semop(sem_id, release, 2);
-
-	fprintf(stderr, "Consumed %d\n", x);
-	count--;
-
-}
-}*/

@@ -1,3 +1,23 @@
+/*
+ *Student: Sean Dela Pena
+ *Professor: Dr. Sanjiv Bhatia
+ *Assignment 3: solving the producer consumer problem
+ *github: github.com/sidkn5
+ *Date: 3/13/2021
+ *
+ *
+ *
+ */
+
+/*
+ *Sources:
+ *monitor and semaphore:
+ *	stallings book solution using monitor
+ *	stallings book dining philosophers problem solution
+ *	icarus.cs.weber.edu/~dab/cs3100/chap.03/bb/c
+ *	tutorialspoint.com
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -48,17 +68,30 @@ void help(){
 	printf("            \t\twill terminate no matter what.\n");
 
 }
+void killChild(){
+	int i;
+	for(i = 0; i < noOfProcess; i++){
+		if(pids[i] != 0){
+			kill(pids[i], SIGKILL);
+		}
+	}
+}
+
 
 //deallocates and frees everything
 void cleanAll(){
+	killChild();
+	free(pids);
 	shmdt(shmPtr);
 	shmctl(shmid, IPC_RMID, NULL);
 	shmctl(logid, IPC_RMID, NULL);
 	//need a semctl to remove semaphore
 	semctl(semid, 0, IPC_RMID, NULL);
+	exit(0);
 }
 
 void ctrlC(){
+	printf("Process terminate. CTRL + C caught\n");
 	cleanAll();
 	exit(0);
 }
@@ -88,6 +121,9 @@ void initSemaphores(){
 	semctl(semid, BUFFER, SETVAL, 0);
 	semctl(semid, MUTEX, SETVAL, 1);
 	semctl(semid, AVAILABLE, SETVAL, 4);
+	semctl(semid, CONSUMERTRACKER, SETVAL, n);
+	
+	semctl(semid, SPOTAVAILABLE, SETVAL, 19);
 }
 
 int checkFileName(int n){
@@ -105,13 +141,14 @@ void resetPid(pid_t p){
 	for(i = 0; i < noOfProcess; i++){
 		if(pids[i] == p){
 			pids[i] = 0;
+			break;
 		}
 	}
 }
 
 int freeIndex(){
 	int i;
-	for(i = 0; i < noOfProcess; i++){
+	for(i = 0; i < 19; i++){
 		if(pids[i] == 0){
 			return i;
 		}
@@ -120,10 +157,10 @@ int freeIndex(){
 //referred to stackoverflow
 void mySigchldHandler(int sig){
 	pid_t pid;
-	int status;
 
-	while((pid = waitpid(-1, &status, WNOHANG)) != -1){
+	while((pid = waitpid(-1, 0, WNOHANG)) != -1){
 		resetPid(pid);
+		sem_signal(SPOTAVAILABLE);
 	}
 }
 
@@ -136,14 +173,15 @@ int main(int argc, char *argv[]){
 	int count = 6;	
 	int z;			//logfile check
 	strcpy(logfile, "logfile.txt");
-	/*if(argc == 1){
+	if(argc == 1){
 		errno = 3;
 		perror("monitor: Error: Please refer to -h help for proper use of the program.");
 		return 0;
-	}*/
+	}
 
 	signal(SIGALRM, timesUp);
 	signal(SIGINT, ctrlC);
+	signal(SIGKILL, cleanAll);
 
 	//referred from stackoverflow
 	struct sigaction sa;
@@ -165,11 +203,9 @@ int main(int argc, char *argv[]){
 			case 'o':
 				z = strlen(optarg);
 				if(z < 30){
-					//printf("hi\n", m);
 					strcpy(logfile, optarg);
 		
 				}else{
-					//printf("deez %d\n", m);
 					strcpy(logfile, "logfile.txt");	
 				}
 
@@ -201,16 +237,10 @@ int main(int argc, char *argv[]){
 		}
 	}
 	///////////END of get option
-	
-	if(m > 6){
+	if(n < m){
 		printf("Sorry there should be more consumers than producers.\n");
-		printf("Since the consumer default is 6, producers will be set to 5.\n");
-		m = 5;
-	}
-	if(n < 2){
-		printf("Sorry there should be more consumers than producers.\n");
-		printf("Since the producer default is 2, consumers will be set to 1.\n");
-		n = 1;
+		printf("Producer is defaulting to 2.\n");
+		m = 2;
 	}
 	
 	//Allocate shared memory that holds the file name
@@ -256,51 +286,18 @@ int main(int argc, char *argv[]){
 
 	//allocate shared memory semaphore
 	semKey = ftok("./producer.c",'a');
-	semid = semget(semKey, 4, IPC_CREAT | 0666);
+	semid = semget(semKey, 5, IPC_CREAT | 0666);
 	initSemaphores();
-
 	
-	printf("In monitor the mutex value is: %d\n", semctl(semid, MUTEX, GETVAL, NULL));
 	shmPtr[NEXTIN] = 0;
 	shmPtr[NEXTOUT] = 0;
-
-	
-	/*/TEST
-
-	pids[1] = fork();
-		if(pids[1] == 0){
-			
-			execl("./producer", "./producer", (char *)0);
-		}
-	pids[2] = fork();
-		sleep(1);
-		if(pids[2] == 0){
-			execl("./producer", "./producer", (char *)0);
-		}
-		
-	pids[2] = fork();
-		if(pids[2] == 0){
-			
-			execl("./consumer", "./consumer", (char *)0);
-		}
-	pids[3] = fork();
-		if(pids[3] == 0){
-			
-			execl("./consumer", "./consumer", (char *)0);
-		}
-
-	pids[4] = fork();
-		if(pids[4] == 0){
-			
-			execl("./consumer", "./consumer", (char *)0);
-		}*/
 
 	
 	int pidIndex;
 	srand(time(NULL));
 	//producers
-	for(a = 0; a < m; a++){
-		//sleep(rand()%3+1);
+	for(a = 0; a < m; a++){  
+		sem_wait(SPOTAVAILABLE);
 		pidIndex = freeIndex();
 		pids[pidIndex] = fork();
 		if(pids[pidIndex] == 0){
@@ -310,6 +307,7 @@ int main(int argc, char *argv[]){
 
 	//consumers
 	for(b = 0; b < n; b++){
+		sem_wait(SPOTAVAILABLE);
 		pidIndex = freeIndex();
 		pids[pidIndex] = fork();
 		if(pids[pidIndex] == 0){
@@ -318,9 +316,26 @@ int main(int argc, char *argv[]){
 	}
 
 	//Finish, track the consumers and terminate when all consumers are done
-	sleep(25);
-	cleanAll();
+	
+	printf("consumer tracker %d\n",semctl(semid, CONSUMERTRACKER, GETVAL, NULL));
+	//printf("in monitor tracker: %d\n ", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));	
+	/*while(1){
+		//printf("inside while\n");
+		if((semctl(semid, CONSUMERTRACKER, GETVAL, NULL)) == 0)
+			break;
+	}*/
+	int test = 0;
+	while(1){
 
+	printf("in monitor tracker: %d\n ", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));	
+		if(semctl(semid, CONSUMERTRACKER, GETVAL, NULL) == 0){
+			break;}
+			
+	}
+
+		printf("outsidewhile");
+
+	cleanAll();
 	return 0;
 
 ////////////////////////////END OF MAIN//////////////////////////////////////////

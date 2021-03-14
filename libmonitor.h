@@ -3,6 +3,8 @@
 #define	BUFFER 1
 #define AVAILABLE 2
 #define MUTEX 0
+#define CONSUMERTRACKER 3
+#define SPOTAVAILABLE 4
 
 void append();
 void take();

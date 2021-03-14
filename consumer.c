@@ -5,11 +5,13 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/types.h>
+#include <sys/sem.h>
 #include <time.h>
 #include <signal.h>
 #include "libmonitor.h"
 
 int shmid;
+int semid;
 int *shmPtr;
 #define BUFFERSIZE sizeof(int)
 
@@ -21,14 +23,12 @@ int main(int argc, char *argv[]){
 	signal(SIGKILL, killHandler);
 	int randomTime;
 	srand(time(NULL));
-	randomTime = (rand() % 10) + 1;
+	randomTime = rand() % 10 + 1;
 
 	
 	sleep(randomTime);
 	take();
 
-
 	exit(0);
-return 0;
 ///////////////END OF MAIN
 }
