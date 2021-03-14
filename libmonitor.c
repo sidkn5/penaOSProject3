@@ -164,16 +164,10 @@ void append (){
 
 	shmPtr[shmPtr[NEXTIN]] = x;
 	shmPtr[NEXTIN] = (shmPtr[NEXTIN] + 1) % 4;
-	//count++;
 	sleep(1);
-	printf("Appending %d\n", x);
+	//printf("Appending %d\n", x);
 	loggingProducer(x);
 	shmdt(shmPtr);
-
-		/*if(semctl(semid, CONSUMERTRACKER, GETVAL, NULL) == 0){
-			printf("shouldend");
-			exit(0);
-			}*/
 
 	sem_signal(MUTEX);
 	sem_signal(BUFFER);
@@ -216,10 +210,7 @@ void take(){
 
 	sem_signal(MUTEX);
 	sem_signal(AVAILABLE);
-
 	sem_wait(CONSUMERTRACKER);
-	//semctl(semid, CONSUMERTRACKER, SETVAL, (semctl(semid, CONSUMERTRACKER, GETVAL, NULL)) - 1);
-	printf("CONSUMER TRACKER %d\n", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));
 
 }
 

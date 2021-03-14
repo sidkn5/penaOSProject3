@@ -16,6 +16,9 @@
  *	stallings book dining philosophers problem solution
  *	icarus.cs.weber.edu/~dab/cs3100/chap.03/bb/c
  *	tutorialspoint.com
+ *
+ *sighandler:
+ *	fedemengo.github.io/blog/2018/02/SIGCHILD-handler.html
  */
 
 #include <stdlib.h>
@@ -159,7 +162,7 @@ int freeIndex(){
 void mySigchldHandler(int sig){
 	pid_t pid;
 
-	while((pid = waitpid(-1, 0, WNOHANG)) != -1){
+	while((pid = waitpid((pid_t)(-1), 0, WNOHANG)) > 0){
 		resetPid(pid);
 		sem_signal(SPOTAVAILABLE);
 	}
@@ -215,13 +218,11 @@ int main(int argc, char *argv[]){
 			//sets the no. of producers
 			case 'p':
 				m = atoi(optarg);
-				printf("Number of producers: %d\n", m);
 				break;
 
 			//sets the no. of consumers
 			case 'c':
 				n = atoi(optarg);
-				printf("Number of Consumers: %d\n", n);
 				break;
 
 			//sets the time of termination no matter what
@@ -238,6 +239,8 @@ int main(int argc, char *argv[]){
 		}
 	}
 	///////////END of get option
+	printf("Number of Producers: %d\n", m);
+	printf("Number of Consumers: %d\n", n);
 	if(n < m){
 		printf("Sorry there should be more consumers than producers.\n");
 		printf("Producer is defaulting to 2.\n");
@@ -285,9 +288,12 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
+	int *semPtr;
+
 	//allocate shared memory semaphore
 	semKey = ftok("./producer.c",'a');
 	semid = semget(semKey, 6, IPC_CREAT | 0666);
+	
 	initSemaphores();
 	
 	shmPtr[NEXTIN] = 0;
@@ -318,23 +324,10 @@ int main(int argc, char *argv[]){
 
 	//Finish, track the consumers and terminate when all consumers are done
 	
-	printf("consumer tracker %d\n",semctl(semid, CONSUMERTRACKER, GETVAL, NULL));
-	//printf("in monitor tracker: %d\n ", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));	
-	/*while(1){
-		//printf("inside while\n");
-		if((semctl(semid, CONSUMERTRACKER, GETVAL, NULL)) == 0)
-			break;
-	}*/
 	while(1){
-
-	//printf("in monitor tracker: %d\n ", semctl(semid, CONSUMERTRACKER, GETVAL, NULL));	
-		if(semctl(semid, CONSUMERTRACKER, GETVAL, NULL) == 0){
-			break;}
-			
+		if(semctl(semid, CONSUMERTRACKER, GETVAL, NULL) == 0)
+			break;
 	}
-
-		printf("outsidewhile");
-
 	cleanAll();
 	return 0;
 

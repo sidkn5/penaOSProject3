@@ -24,11 +24,9 @@ int main(int argc, char *argv[]){
 	int randomTime;
 	srand(time(NULL));
 	randomTime = rand() % 10 + 1;
-
 	
 	sleep(randomTime);
 	take();
-
 	exit(0);
 ///////////////END OF MAIN
 }

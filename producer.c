@@ -12,6 +12,7 @@
 #include "libmonitor.h"
 #define BUFFERSIZE sizeof(int)
 
+int semid;
 void killHandler(){
 	exit(0);
 }
